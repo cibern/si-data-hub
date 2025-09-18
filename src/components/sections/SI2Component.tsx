@@ -49,48 +49,59 @@ const SI2Component = () => {
     }
 
     // Càlculs segons CTE DB-SI 2
-    let minDistance = 3; // Distància mínima base
-    let maxOpeningPercentage = 60; // Percentatge màxim d'obertures
-    let requiredMaterial = "B-s1,d0";
+    let minDistance = 3.0; // Distància mínima base per façanes enfrontades (α=0°)
+    let requiredMaterial = "D-s3,d0";
     const recommendations: string[] = [];
 
-    // Càlcul de distància mínima segons alçada
-    if (heightNum > 15) {
-      minDistance = Math.max(3, heightNum * 0.2);
+    // Verificar materials segons alçada (punt 4 de SI2)
+    if (heightNum <= 10) {
+      requiredMaterial = "D-s3,d0";
+    } else if (heightNum <= 18) {
+      requiredMaterial = "C-s3,d0";
+    } else {
+      requiredMaterial = "B-s3,d0";
     }
 
-    // Ajust segons percentatge d'obertures
-    if (openingNum > 40) {
-      minDistance = minDistance * 1.5;
+    // Verificar si el material actual compleix
+    const materialValues = { "d": 1, "c": 2, "b": 3, "a2": 4, "a1": 5 };
+    const requiredValue = materialValues[requiredMaterial.charAt(0).toLowerCase()];
+    const currentValue = materialValues[formData.facadeMaterial];
+
+    if (currentValue < requiredValue) {
+      recommendations.push(`Material inadequat. Es requereix ${requiredMaterial} o superior`);
     }
 
-    // Verificar distància
+    // Verificar franja EI 60 per propagació vertical (punt 3)
+    if (heightNum > 6) {
+      recommendations.push("Assegurar franja EI 60 de 1m d'altura en encuentro forjado-fachada");
+    }
+
+    // Verificar distància segons normativa (punt 2)
     if (distanceNum < minDistance) {
-      recommendations.push(`Augmentar distància a ${minDistance.toFixed(1)}m`);
-      recommendations.push("Reduir percentatge d'obertures");
-      recommendations.push("Millorar materials de façana");
+      recommendations.push(`Augmentar distància a ${minDistance.toFixed(1)}m mínim`);
+      recommendations.push("O millorar resistència al foc dels elements (EI 60)");
     }
 
-    // Verificar obertures
-    if (openingNum > maxOpeningPercentage) {
-      recommendations.push(`Reduir obertures per sota del ${maxOpeningPercentage}%`);
+    // Verificacions especials per façanes baixes accessibles (punt 6)
+    if (heightNum <= 18) {
+      recommendations.push("Si la façana és accessible al públic, material mínim B-s3,d0 fins 3,5m");
     }
 
-    // Verificar materials segons alçada
-    if (heightNum > 18) {
-      requiredMaterial = "A2-s1,d0";
-      if (!["a1", "a2"].includes(formData.facadeMaterial)) {
-        recommendations.push("Utilitzar materials A1 o A2-s1,d0 per façanes altes");
-      }
+    // Verificacions per cámaras ventiladas (punt 5)
+    if (heightNum <= 10) {
+      recommendations.push("Aïllament en càmares ventilades: mínim D-s3,d0");
+    } else if (heightNum <= 28) {
+      recommendations.push("Aïllament en càmares ventilades: mínim B-s3,d0");
+    } else {
+      recommendations.push("Aïllament en càmares ventilades: mínim A2-s3,d0");
     }
 
     const compliance = distanceNum >= minDistance && 
-                      openingNum <= maxOpeningPercentage &&
-                      (heightNum <= 18 || ["a1", "a2"].includes(formData.facadeMaterial));
+                      currentValue >= requiredValue;
 
     setResults({
       minDistance,
-      maxOpeningPercentage,
+      maxOpeningPercentage: 0, // No s'especifica límit en SI2
       requiredMaterial,
       compliance,
       recommendations,
@@ -224,8 +235,8 @@ const SI2Component = () => {
                   </div>
                   
                   <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
-                    <span className="font-medium">Màx. obertures:</span>
-                    <Badge variant="outline">{results.maxOpeningPercentage}%</Badge>
+                    <span className="font-medium">Resistència vertical:</span>
+                    <Badge variant="outline">EI 60 (1m altura)</Badge>
                   </div>
 
                   <div className="flex justify-between items-center p-3 bg-muted rounded-lg">

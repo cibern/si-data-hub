@@ -5,40 +5,50 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
-import { AlertCircle, CheckCircle2, Calculator, Truck } from "lucide-react";
+import { AlertCircle, CheckCircle2, Truck, Map } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const SI5Component = () => {
   const { toast } = useToast();
   const [formData, setFormData] = useState({
     buildingHeight: "",
-    buildingWidth: "",
-    accessRoadWidth: "",
-    distanceToAccess: "",
-    hasHydrants: false,
+    buildingDepth: "",
+    accessWidth: "",
+    approachDistance: "",
+    accessSlope: "",
+    turningRadius: "",
+    loadCapacity: "",
     hydrantDistance: "",
-    hasFireLift: false,
-    accessibleRoof: false,
+    buildingUse: "",
   });
   
   const [results, setResults] = useState({
-    requiredRoadWidth: 0,
-    maxDistanceToBuilding: 0,
-    requiredHydrants: 0,
-    needsFireLift: false,
-    compliance: false,
+    requiredAccess: "",
+    minAccessWidth: 0,
+    maxApproachDistance: 0,
+    hydrantCompliance: false,
+    accessCompliance: false,
+    approachCompliance: false,
     recommendations: [] as string[],
   });
 
+  const buildingUses = [
+    { value: "residential", label: "Residencial" },
+    { value: "office", label: "Administratiu" },
+    { value: "commercial", label: "Comercial" },
+    { value: "assembly", label: "Pública concurrència" },
+    { value: "industrial", label: "Industrial" },
+    { value: "healthcare", label: "Sanitari" },
+  ];
+
   const calculateFireAccess = () => {
     const heightNum = parseFloat(formData.buildingHeight);
-    const widthNum = parseFloat(formData.buildingWidth);
-    const roadWidthNum = parseFloat(formData.accessRoadWidth);
-    const distanceNum = parseFloat(formData.distanceToAccess);
-    const hydrantDistanceNum = parseFloat(formData.hydrantDistance);
+    const depthNum = parseFloat(formData.buildingDepth);
+    const widthNum = parseFloat(formData.accessWidth);
+    const distanceNum = parseFloat(formData.approachDistance);
+    const hydrantNum = parseFloat(formData.hydrantDistance);
 
-    if (!heightNum || !widthNum || !roadWidthNum || !distanceNum) {
+    if (!heightNum || !depthNum || !widthNum || !distanceNum || !formData.buildingUse) {
       toast({
         title: "Error",
         description: "Si us plau, omple tots els camps necessaris",
@@ -47,85 +57,57 @@ const SI5Component = () => {
       return;
     }
 
-    // Càlculs segons CTE DB-SI 5
-    let requiredRoadWidth = 3.5; // Amplada mínima base
-    let maxDistanceToBuilding = 30; // Distància màxima base
-    let requiredHydrants = 0;
-    let needsFireLift = false;
+    let requiredAccess = "Estàndard";
+    let minAccessWidth = 3.5;
+    let maxApproachDistance = 30;
     const recommendations: string[] = [];
 
-    // Amplada de vials segons alçada
-    if (heightNum > 15) {
-      requiredRoadWidth = 6;
-      maxDistanceToBuilding = 15;
+    if (heightNum > 15 || ["healthcare", "assembly"].includes(formData.buildingUse)) {
+      requiredAccess = "Reforçat";
+      minAccessWidth = 5.0;
+      maxApproachDistance = 18;
     }
+
     if (heightNum > 28) {
-      requiredRoadWidth = 8;
-      maxDistanceToBuilding = 10;
-      needsFireLift = true;
+      requiredAccess = "Especial";
+      minAccessWidth = 6.0;
+      maxApproachDistance = 10;
     }
 
-    // Hidrants exteriors
-    if (heightNum > 15 || widthNum > 5000) {
-      requiredHydrants = Math.ceil(Math.max(heightNum / 15, widthNum / 5000));
+    const accessCompliance = widthNum >= minAccessWidth;
+    const approachCompliance = distanceNum <= maxApproachDistance;
+    const hydrantCompliance = hydrantNum <= 100;
+
+    if (!accessCompliance) {
+      recommendations.push(`Amplada d'accés insuficient. Mínim: ${minAccessWidth}m`);
     }
 
-    // Verificacions de compliment
-    if (roadWidthNum < requiredRoadWidth) {
-      recommendations.push(`Ampliar vial d'accés a ${requiredRoadWidth}m mínim`);
+    if (!approachCompliance) {
+      recommendations.push(`Distància d'aproximació excessiva. Màxim: ${maxApproachDistance}m`);
     }
 
-    if (distanceNum > maxDistanceToBuilding) {
-      recommendations.push(`Reduir distància d'accés a ${maxDistanceToBuilding}m màxim`);
+    if (!hydrantCompliance) {
+      recommendations.push("Hidrant massa lluny (màxim 100m de l'edifici)");
     }
-
-    if (needsFireLift && !formData.hasFireLift) {
-      recommendations.push("Instal·lar ascensor d'emergència per edificis alts");
-    }
-
-    if (requiredHydrants > 0 && !formData.hasHydrants) {
-      recommendations.push(`Instal·lar ${requiredHydrants} hidrant(s) exterior(s)`);
-    }
-
-    if (formData.hasHydrants && hydrantDistanceNum > 100) {
-      recommendations.push("Reduir distància a hidrants per sota de 100m");
-    }
-
-    if (heightNum > 15 && !formData.accessibleRoof) {
-      recommendations.push("Assegurar accessibilitat de coberta per bombers");
-    }
-
-    // Espai de maniobra
-    if (heightNum > 15) {
-      recommendations.push("Reservar espai de maniobra mínim 7x18m davant façana");
-    }
-
-    // Pendent del vial
-    if (heightNum > 28) {
-      recommendations.push("Pendent del vial d'accés no superior al 5%");
-      recommendations.push("Resistència del paviment mínima 20 Tn per eix");
-    }
-
-    const compliance = roadWidthNum >= requiredRoadWidth && 
-                      distanceNum <= maxDistanceToBuilding &&
-                      (!needsFireLift || formData.hasFireLift) &&
-                      (requiredHydrants === 0 || formData.hasHydrants);
 
     setResults({
-      requiredRoadWidth,
-      maxDistanceToBuilding,
-      requiredHydrants,
-      needsFireLift,
-      compliance,
+      requiredAccess,
+      minAccessWidth,
+      maxApproachDistance,
+      hydrantCompliance,
+      accessCompliance,
+      approachCompliance,
       recommendations,
     });
 
+    const overallCompliance = accessCompliance && approachCompliance && hydrantCompliance;
+
     toast({
-      title: compliance ? "Compliment verificat" : "Incompliment detectat",
-      description: compliance 
-        ? "L'accés per bombers compleix amb SI 5" 
+      title: overallCompliance ? "Compliment verificat" : "Incompliment detectat",
+      description: overallCompliance 
+        ? "L'accés de bombers compleix SI 5" 
         : "Revisa les recomanacions per complir",
-      variant: compliance ? "default" : "destructive",
+      variant: overallCompliance ? "default" : "destructive",
     });
   };
 
@@ -133,28 +115,23 @@ const SI5Component = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleCheckboxChange = (field: string, checked: boolean) => {
-    setFormData(prev => ({ ...prev, [field]: checked }));
-  };
-
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Formulari d'entrada */}
         <Card className="shadow-soft">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Truck className="h-5 w-5 text-accent-foreground" />
-              Accés per a intervenció de bombers
+              <Truck className="h-5 w-5 text-primary" />
+              Accessibilitat per bombers
             </CardTitle>
             <CardDescription>
-              Condicions d'accessibilitat i aproximació dels bombers
+              Paràmetres per verificar l'accés i aproximació dels bombers
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="buildingHeight">Alçada edifici (m)</Label>
+                <Label htmlFor="buildingHeight">Alçada de l'edifici (m)</Label>
                 <Input
                   id="buildingHeight"
                   type="number"
@@ -164,43 +141,59 @@ const SI5Component = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="buildingWidth">Longitud façana (m)</Label>
+                <Label htmlFor="buildingDepth">Profunditat edifici (m)</Label>
                 <Input
-                  id="buildingWidth"
+                  id="buildingDepth"
                   type="number"
-                  value={formData.buildingWidth}
-                  onChange={(e) => handleInputChange("buildingWidth", e.target.value)}
-                  placeholder="0"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="accessRoadWidth">Amplada vial (m)</Label>
-                <Input
-                  id="accessRoadWidth"
-                  type="number"
-                  step="0.5"
-                  value={formData.accessRoadWidth}
-                  onChange={(e) => handleInputChange("accessRoadWidth", e.target.value)}
-                  placeholder="3.5"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="distanceToAccess">Distància a façana (m)</Label>
-                <Input
-                  id="distanceToAccess"
-                  type="number"
-                  value={formData.distanceToAccess}
-                  onChange={(e) => handleInputChange("distanceToAccess", e.target.value)}
+                  value={formData.buildingDepth}
+                  onChange={(e) => handleInputChange("buildingDepth", e.target.value)}
                   placeholder="0"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="hydrantDistance">Distància a hidrant (m)</Label>
+              <Label htmlFor="buildingUse">Ús de l'edifici</Label>
+              <Select value={formData.buildingUse} onValueChange={(value) => handleInputChange("buildingUse", value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona l'ús" />
+                </SelectTrigger>
+                <SelectContent>
+                  {buildingUses.map(use => (
+                    <SelectItem key={use.value} value={use.value}>
+                      {use.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="accessWidth">Amplada d'accés (m)</Label>
+                <Input
+                  id="accessWidth"
+                  type="number"
+                  step="0.1"
+                  value={formData.accessWidth}
+                  onChange={(e) => handleInputChange("accessWidth", e.target.value)}
+                  placeholder="3.5"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="approachDistance">Distància aproximació (m)</Label>
+                <Input
+                  id="approachDistance"
+                  type="number"
+                  value={formData.approachDistance}
+                  onChange={(e) => handleInputChange("approachDistance", e.target.value)}
+                  placeholder="30"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="hydrantDistance">Distància hidrant (m)</Label>
               <Input
                 id="hydrantDistance"
                 type="number"
@@ -210,92 +203,63 @@ const SI5Component = () => {
               />
             </div>
 
-            <div className="space-y-3">
-              <Label>Equipaments disponibles:</Label>
-              <div className="space-y-2">
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="hasHydrants"
-                    checked={formData.hasHydrants}
-                    onCheckedChange={(checked) => handleCheckboxChange("hasHydrants", checked as boolean)}
-                  />
-                  <Label htmlFor="hasHydrants" className="text-sm">Hidrants exteriors</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="hasFireLift"
-                    checked={formData.hasFireLift}
-                    onCheckedChange={(checked) => handleCheckboxChange("hasFireLift", checked as boolean)}
-                  />
-                  <Label htmlFor="hasFireLift" className="text-sm">Ascensor d'emergència</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="accessibleRoof"
-                    checked={formData.accessibleRoof}
-                    onCheckedChange={(checked) => handleCheckboxChange("accessibleRoof", checked as boolean)}
-                  />
-                  <Label htmlFor="accessibleRoof" className="text-sm">Coberta accessible</Label>
-                </div>
-              </div>
-            </div>
-
             <Button 
               onClick={calculateFireAccess} 
               className="w-full bg-gradient-primary hover:opacity-90 transition-smooth"
             >
-              Verificar accés SI 5
+              Verificar accés bombers SI 5
             </Button>
           </CardContent>
         </Card>
 
-        {/* Resultats */}
         <Card className="shadow-soft">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              {results.compliance ? (
+              {results.accessCompliance && results.approachCompliance && results.hydrantCompliance ? (
                 <CheckCircle2 className="h-5 w-5 text-success" />
               ) : (
                 <AlertCircle className="h-5 w-5 text-destructive" />
               )}
-              Resultats d'accés bombers
+              Resultats accés bombers
             </CardTitle>
-            <CardDescription>
-              Verificació de condicions d'intervenció
-            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {results.requiredRoadWidth > 0 && (
+            {results.requiredAccess && (
               <>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
-                    <span className="font-medium">Amplada vial req.:</span>
-                    <Badge variant="secondary">{results.requiredRoadWidth} m</Badge>
+                    <span className="font-medium">Tipus d'accés:</span>
+                    <Badge variant="secondary">{results.requiredAccess}</Badge>
                   </div>
                   
                   <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
-                    <span className="font-medium">Distància màxima:</span>
-                    <Badge variant="outline">{results.maxDistanceToBuilding} m</Badge>
+                    <span className="font-medium">Amplada mínima:</span>
+                    <Badge variant="outline">{results.minAccessWidth} m</Badge>
                   </div>
 
-                  {results.requiredHydrants > 0 && (
-                    <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
-                      <span className="font-medium">Hidrants necessaris:</span>
-                      <Badge variant="outline">{results.requiredHydrants}</Badge>
-                    </div>
-                  )}
+                  <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
+                    <span className="font-medium">Distància màxima:</span>
+                    <Badge variant="outline">{results.maxApproachDistance} m</Badge>
+                  </div>
 
                   <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
-                    <span className="font-medium">Ascensor emergència:</span>
-                    <Badge variant={results.needsFireLift ? "destructive" : "secondary"}>
-                      {results.needsFireLift ? "NECESSARI" : "NO NECESSARI"}
+                    <span className="font-medium">Accés conforme:</span>
+                    <Badge variant={results.accessCompliance ? "default" : "destructive"}>
+                      {results.accessCompliance ? "COMPLEIX" : "NO COMPLEIX"}
                     </Badge>
                   </div>
 
                   <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
-                    <span className="font-medium">Estat de compliment:</span>
-                    <Badge variant={results.compliance ? "default" : "destructive"}>
-                      {results.compliance ? "COMPLEIX" : "NO COMPLEIX"}
+                    <span className="font-medium">Aproximació conforme:</span>
+                    <Badge variant={results.approachCompliance ? "default" : "destructive"}>
+                      {results.approachCompliance ? "COMPLEIX" : "NO COMPLEIX"}
+                    </Badge>
+                  </div>
+
+                  <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
+                    <span className="font-medium">Hidrant conforme:</span>
+                    <Badge variant={results.hydrantCompliance ? "default" : "destructive"}>
+                      {results.hydrantCompliance ? "COMPLEIX" : "NO COMPLEIX"}
                     </Badge>
                   </div>
                 </div>
@@ -306,7 +270,7 @@ const SI5Component = () => {
                     <ul className="space-y-1">
                       {results.recommendations.map((rec, index) => (
                         <li key={index} className="text-sm bg-accent p-2 rounded flex items-start gap-2">
-                          <AlertCircle className="h-4 w-4 text-accent-foreground mt-0.5 flex-shrink-0" />
+                          <Map className="h-4 w-4 text-accent-foreground mt-0.5 flex-shrink-0" />
                           {rec}
                         </li>
                       ))}

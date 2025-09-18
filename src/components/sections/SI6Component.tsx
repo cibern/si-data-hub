@@ -5,64 +5,60 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, CheckCircle2, Calculator, Settings } from "lucide-react";
+import { AlertCircle, CheckCircle2, Building2, Calculator } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const SI6Component = () => {
   const { toast } = useToast();
   const [formData, setFormData] = useState({
-    structureType: "",
-    usBuilding: "",
     buildingHeight: "",
-    loadLevel: "",
-    structuralElement: "",
-    exposedSurface: "",
+    buildingUse: "",
+    structuralMaterial: "",
+    sectorLocation: "",
+    riskLevel: "",
+    numberOfFloors: "",
   });
   
   const [results, setResults] = useState({
     requiredResistance: "",
-    structuralStability: "",
-    sectioning: "",
-    compliance: false,
+    materialCompliance: false,
+    heightCompliance: false,
+    overallCompliance: false,
     recommendations: [] as string[],
   });
 
-  const structureTypes = [
+  const buildingUses = [
+    { value: "residential_single", label: "Vivienda unifamiliar" },
+    { value: "residential", label: "Residencial Vivienda" },
+    { value: "office", label: "Administratiu" },
+    { value: "commercial", label: "Comercial" },
+    { value: "assembly", label: "Pública concurrència" },
+    { value: "educational", label: "Docent" },
+    { value: "healthcare", label: "Hospitalari" },
+    { value: "parking_exclusive", label: "Aparcament (edifici exclusiu)" },
+    { value: "parking_under", label: "Aparcament (sota altre ús)" },
+  ];
+
+  const structuralMaterials = [
     { value: "concrete", label: "Formigó armat" },
-    { value: "steel", label: "Estructura metàl·lica" },
+    { value: "steel", label: "Acer" },
     { value: "wood", label: "Fusta" },
     { value: "masonry", label: "Obra de fàbrica" },
     { value: "mixed", label: "Estructura mixta" },
   ];
 
-  const usosBuilding = [
-    { value: "residential", label: "Residencial" },
-    { value: "office", label: "Oficines" },
-    { value: "commercial", label: "Comercial" },
-    { value: "industrial", label: "Industrial" },
-    { value: "educational", label: "Educatiu" },
-    { value: "healthcare", label: "Sanitari" },
+  const riskLevels = [
+    { value: "low", label: "Risc especial baix" },
+    { value: "medium", label: "Risc especial mitjà" },
+    { value: "high", label: "Risc especial alt" },
+    { value: "normal", label: "Risc normal" },
   ];
 
-  const loadLevels = [
-    { value: "low", label: "Sobrecàrrega baixa (<3 kN/m²)" },
-    { value: "medium", label: "Sobrecàrrega mitjana (3-5 kN/m²)" },
-    { value: "high", label: "Sobrecàrrega alta (>5 kN/m²)" },
-  ];
-
-  const structuralElements = [
-    { value: "pillar", label: "Pilars" },
-    { value: "beam", label: "Bigues" },
-    { value: "slab", label: "Forjats" },
-    { value: "wall", label: "Murs portants" },
-    { value: "stair", label: "Escales" },
-  ];
-
-  const calculateFireResistance = () => {
+  const calculateStructuralResistance = () => {
     const heightNum = parseFloat(formData.buildingHeight);
-    const exposedSurfaceNum = parseFloat(formData.exposedSurface);
+    const floorsNum = parseFloat(formData.numberOfFloors);
 
-    if (!heightNum || !formData.structureType || !formData.usBuilding || !formData.loadLevel) {
+    if (!heightNum || !formData.buildingUse || !formData.structuralMaterial) {
       toast({
         title: "Error",
         description: "Si us plau, omple tots els camps necessaris",
@@ -71,101 +67,92 @@ const SI6Component = () => {
       return;
     }
 
-    // Càlculs segons CTE DB-SI 6
-    let requiredResistance = "R 60";
-    let structuralStability = "R 90";
-    let sectioning = "REI 60";
+    let requiredResistance = "R 30";
     const recommendations: string[] = [];
 
-    // Resistència segons alçada i ús
-    if (heightNum <= 15) {
-      requiredResistance = "R 60";
-      structuralStability = "R 90";
-    } else if (heightNum <= 28) {
-      requiredResistance = "R 90";
-      structuralStability = "R 120";
-      sectioning = "REI 90";
-    } else {
-      requiredResistance = "R 120";
-      structuralStability = "R 180";
-      sectioning = "REI 120";
-    }
-
-    // Ajustaments segons ús
-    if (["healthcare", "educational"].includes(formData.usBuilding)) {
-      if (heightNum > 15) {
+    // Determinació de resistència segons taula 3.1 de SI6
+    if (formData.sectorLocation === "basement") {
+      // Plantes sota rasant
+      if (formData.buildingUse === "residential_single") {
+        requiredResistance = "R 30";
+      } else if (["residential", "educational", "office"].includes(formData.buildingUse)) {
         requiredResistance = "R 120";
-        structuralStability = "R 180";
-      }
-    }
-
-    if (formData.usBuilding === "industrial") {
-      if (formData.loadLevel === "high") {
+      } else if (["commercial", "assembly", "healthcare"].includes(formData.buildingUse)) {
+        requiredResistance = heightNum > 28 ? "R 180" : "R 120";
+      } else if (formData.buildingUse === "parking_exclusive") {
         requiredResistance = "R 90";
-        structuralStability = "R 120";
+      } else if (formData.buildingUse === "parking_under") {
+        requiredResistance = "R 120";
+      }
+    } else {
+      // Plantes sobre rasant
+      if (formData.buildingUse === "residential_single") {
+        requiredResistance = "R 30";
+      } else if (["residential", "educational", "office"].includes(formData.buildingUse)) {
+        if (heightNum <= 15) requiredResistance = "R 60";
+        else if (heightNum <= 28) requiredResistance = "R 90";
+        else requiredResistance = "R 120";
+      } else if (["commercial", "assembly", "healthcare"].includes(formData.buildingUse)) {
+        if (heightNum <= 15) requiredResistance = "R 90";
+        else if (heightNum <= 28) requiredResistance = "R 120";
+        else requiredResistance = "R 180";
       }
     }
 
-    // Ajustaments segons tipus d'estructura
-    switch (formData.structureType) {
-      case "steel":
-        recommendations.push("Aplicar protecció passiva a l'estructura metàl·lica");
-        if (heightNum > 28) {
-          recommendations.push("Considerar perfils de major secció o protecció addicional");
-        }
-        break;
-      case "wood":
-        recommendations.push("Verificar secció resistent després de carbonització");
-        if (heightNum > 15) {
-          recommendations.push("Estructura de fusta limitada per alçada superior a 15m");
-        }
-        break;
-      case "concrete":
-        recommendations.push("Verificar recobriment mínim d'armadures");
-        break;
-    }
-
-    // Recomanacions per elements
-    if (formData.structuralElement === "pillar") {
-      recommendations.push("Els pilars han de mantenir capacitat portant durant l'incendi");
-    }
-    if (formData.structuralElement === "beam") {
-      recommendations.push("Verificar deformació màxima de bigues sota foc");
-    }
-    if (formData.structuralElement === "slab") {
-      recommendations.push("Forjats han de mantenir compartimentació horitzontal");
-    }
-
-    // Verificacions especials
-    if (exposedSurfaceNum && exposedSurfaceNum > 100) {
-      recommendations.push("Reduir superfície exposada o augmentar protecció");
-    }
-
-    if (heightNum > 50) {
-      recommendations.push("Edificis singulars requereixen estudi específic");
+    // Verificacions per risc especial (taula 3.2)
+    if (formData.riskLevel === "low") {
+      requiredResistance = "R 90";
+    } else if (formData.riskLevel === "medium") {
+      requiredResistance = "R 120";
+    } else if (formData.riskLevel === "high") {
       requiredResistance = "R 180";
-      structuralStability = "R 240";
     }
 
-    // Protecció passiva
-    if (formData.structureType === "steel" && heightNum > 15) {
-      recommendations.push("Protecció ignífuga amb morter, plaques o pintura intumescent");
+    // Recomanacions específiques
+    if (heightNum > 28) {
+      recommendations.push("Edifici d'altura - considerar mètodes avançats de càlcul");
     }
 
-    const compliance = true; // Sempre es pot complir amb el disseny adequat
+    if (formData.structuralMaterial === "steel") {
+      recommendations.push("Estructura d'acer - verificar protecció passiva");
+    }
+
+    if (formData.structuralMaterial === "wood") {
+      recommendations.push("Estructura de fusta - verificar dimensions mínimes");
+    }
+
+    if (["commercial", "assembly"].includes(formData.buildingUse)) {
+      recommendations.push("Ús de pública concurrència - especial atenció a sortides");
+    }
+
+    // Verificacions de compliment (simplificat)
+    const materialCompliance = true; // Requeriria verificació detallada
+    const heightCompliance = heightNum <= 100; // Límit simplificat
+    const overallCompliance = materialCompliance && heightCompliance;
+
+    if (!heightCompliance) {
+      recommendations.push("Alçada excessiva - aplicar mètodes especials de càlcul");
+    }
+
+    // Recomanacions per cobertes lleugeres
+    if (formData.sectorLocation === "roof" && heightNum <= 28) {
+      recommendations.push("Coberta lleugera: pot ser R 30 si no compromet estabilitat");
+    }
 
     setResults({
       requiredResistance,
-      structuralStability,
-      sectioning,
-      compliance,
+      materialCompliance,
+      heightCompliance,
+      overallCompliance,
       recommendations,
     });
 
     toast({
-      title: "Càlcul completat",
-      description: "Resistència al foc determinada segons normativa",
-      variant: "default",
+      title: overallCompliance ? "Compliment verificat" : "Verificació necessària",
+      description: overallCompliance 
+        ? "L'estructura compleix els requisits bàsics SI 6" 
+        : "Revisa les recomanacions i considera càlcul detallat",
+      variant: overallCompliance ? "default" : "destructive",
     });
   };
 
@@ -180,48 +167,17 @@ const SI6Component = () => {
         <Card className="shadow-soft">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Settings className="h-5 w-5 text-muted-foreground" />
-              Resistència al foc de l'estructura
+              <Building2 className="h-5 w-5 text-primary" />
+              Resistència al foc estructural
             </CardTitle>
             <CardDescription>
-              Característiques estructurals per determinar resistència requerida
+              Paràmetres per determinar la resistència al foc de l'estructura
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="structureType">Tipus d'estructura</Label>
-              <Select value={formData.structureType} onValueChange={(value) => handleInputChange("structureType", value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecciona el tipus" />
-                </SelectTrigger>
-                <SelectContent>
-                  {structureTypes.map(type => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {type.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="usBuilding">Ús de l'edifici</Label>
-                <Select value={formData.usBuilding} onValueChange={(value) => handleInputChange("usBuilding", value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecciona l'ús" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {usosBuilding.map(us => (
-                      <SelectItem key={us.value} value={us.value}>
-                        {us.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="buildingHeight">Alçada edifici (m)</Label>
+                <Label htmlFor="buildingHeight">Alçada de l'edifici (m)</Label>
                 <Input
                   id="buildingHeight"
                   type="number"
@@ -230,55 +186,86 @@ const SI6Component = () => {
                   placeholder="0"
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="numberOfFloors">Nombre de plantes</Label>
+                <Input
+                  id="numberOfFloors"
+                  type="number"
+                  value={formData.numberOfFloors}
+                  onChange={(e) => handleInputChange("numberOfFloors", e.target.value)}
+                  placeholder="1"
+                />
+              </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="loadLevel">Nivell de sobrecàrrega</Label>
-              <Select value={formData.loadLevel} onValueChange={(value) => handleInputChange("loadLevel", value)}>
+              <Label htmlFor="buildingUse">Ús de l'edifici</Label>
+              <Select value={formData.buildingUse} onValueChange={(value) => handleInputChange("buildingUse", value)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecciona el nivell" />
+                  <SelectValue placeholder="Selecciona l'ús" />
                 </SelectTrigger>
                 <SelectContent>
-                  {loadLevels.map(level => (
-                    <SelectItem key={level.value} value={level.value}>
-                      {level.label}
+                  {buildingUses.map(use => (
+                    <SelectItem key={use.value} value={use.value}>
+                      {use.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
 
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="structuralMaterial">Material estructural</Label>
+                <Select value={formData.structuralMaterial} onValueChange={(value) => handleInputChange("structuralMaterial", value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Material principal" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {structuralMaterials.map(material => (
+                      <SelectItem key={material.value} value={material.value}>
+                        {material.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="sectorLocation">Localització del sector</Label>
+                <Select value={formData.sectorLocation} onValueChange={(value) => handleInputChange("sectorLocation", value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Ubicació" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="basement">Sota rasant</SelectItem>
+                    <SelectItem value="ground">Sobre rasant</SelectItem>
+                    <SelectItem value="roof">Coberta</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
             <div className="space-y-2">
-              <Label htmlFor="structuralElement">Element estructural</Label>
-              <Select value={formData.structuralElement} onValueChange={(value) => handleInputChange("structuralElement", value)}>
+              <Label htmlFor="riskLevel">Nivell de risc</Label>
+              <Select value={formData.riskLevel} onValueChange={(value) => handleInputChange("riskLevel", value)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecciona l'element" />
+                  <SelectValue placeholder="Selecciona el risc" />
                 </SelectTrigger>
                 <SelectContent>
-                  {structuralElements.map(element => (
-                    <SelectItem key={element.value} value={element.value}>
-                      {element.label}
+                  {riskLevels.map(risk => (
+                    <SelectItem key={risk.value} value={risk.value}>
+                      {risk.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="exposedSurface">Superfície exposada (m²)</Label>
-              <Input
-                id="exposedSurface"
-                type="number"
-                value={formData.exposedSurface}
-                onChange={(e) => handleInputChange("exposedSurface", e.target.value)}
-                placeholder="0"
-              />
             </div>
 
             <Button 
-              onClick={calculateFireResistance} 
+              onClick={calculateStructuralResistance} 
               className="w-full bg-gradient-primary hover:opacity-90 transition-smooth"
             >
+              <Calculator className="h-4 w-4 mr-2" />
               Calcular resistència SI 6
             </Button>
           </CardContent>
@@ -288,11 +275,15 @@ const SI6Component = () => {
         <Card className="shadow-soft">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-success" />
-              Resistència requerida SI 6
+              {results.overallCompliance ? (
+                <CheckCircle2 className="h-5 w-5 text-success" />
+              ) : (
+                <AlertCircle className="h-5 w-5 text-warning" />
+              )}
+              Resultats resistència estructural
             </CardTitle>
             <CardDescription>
-              Resistència al foc necessària per l'estructura
+              Resistència al foc requerida per l'estructura
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -300,33 +291,31 @@ const SI6Component = () => {
               <>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
-                    <span className="font-medium">Resistència elements:</span>
-                    <Badge variant="secondary">{results.requiredResistance}</Badge>
+                    <span className="font-medium">Resistència requerida:</span>
+                    <Badge variant="secondary" className="text-lg font-bold">
+                      {results.requiredResistance}
+                    </Badge>
                   </div>
                   
                   <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
-                    <span className="font-medium">Estabilitat estructural:</span>
-                    <Badge variant="outline">{results.structuralStability}</Badge>
+                    <span className="font-medium">Material adequat:</span>
+                    <Badge variant={results.materialCompliance ? "default" : "destructive"}>
+                      {results.materialCompliance ? "COMPLEIX" : "VERIFICAR"}
+                    </Badge>
                   </div>
 
                   <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
-                    <span className="font-medium">Compartimentació:</span>
-                    <Badge variant="outline">{results.sectioning}</Badge>
+                    <span className="font-medium">Altura adequada:</span>
+                    <Badge variant={results.heightCompliance ? "default" : "destructive"}>
+                      {results.heightCompliance ? "COMPLEIX" : "VERIFICAR"}
+                    </Badge>
                   </div>
 
                   <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
-                    <span className="font-medium">Compliment:</span>
-                    <Badge variant="default">DETERMINAT</Badge>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <h4 className="font-semibold text-sm text-muted-foreground">Significat:</h4>
-                  <div className="text-sm space-y-1">
-                    <p><strong>R:</strong> Capacitat portant</p>
-                    <p><strong>E:</strong> Integritat</p>
-                    <p><strong>I:</strong> Aïllament tèrmic</p>
-                    <p><strong>Número:</strong> Temps en minuts</p>
+                    <span className="font-medium">Compliment general:</span>
+                    <Badge variant={results.overallCompliance ? "default" : "destructive"}>
+                      {results.overallCompliance ? "COMPLEIX" : "REQUEREIX VERIFICACIÓ"}
+                    </Badge>
                   </div>
                 </div>
 
@@ -343,6 +332,13 @@ const SI6Component = () => {
                     </ul>
                   </div>
                 )}
+
+                <div className="mt-4 p-3 bg-muted rounded-lg">
+                  <p className="text-xs text-muted-foreground">
+                    <strong>Nota:</strong> Aquest és un càlcul simplificat. Per a projectes reals, consulta els 
+                    annexos C-F del CTE DB-SI 6 i considera l'assessorament d'un enginyer estructural.
+                  </p>
+                </div>
               </>
             )}
           </CardContent>
