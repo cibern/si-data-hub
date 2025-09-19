@@ -20,11 +20,9 @@ interface ProjectData {
 
 interface SI3ComponentProps {
   projectData: ProjectData;
-  siData: any;
-  onSiDataChange: (data: any) => void;
 }
 
-const SI3Component = ({ projectData, siData, onSiDataChange }: SI3ComponentProps) => {
+const SI3Component = ({ projectData }: SI3ComponentProps) => {
   const { toast } = useToast();
   const [formData, setFormData] = useState({
     usBuilding: "",

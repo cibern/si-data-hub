@@ -20,11 +20,9 @@ interface ProjectData {
 
 interface SI6ComponentProps {
   projectData: ProjectData;
-  siData: any;
-  onSiDataChange: (data: any) => void;
 }
 
-const SI6Component = ({ projectData, siData, onSiDataChange }: SI6ComponentProps) => {
+const SI6Component = ({ projectData }: SI6ComponentProps) => {
   const { toast } = useToast();
   const [formData, setFormData] = useState({
     buildingHeight: "",
