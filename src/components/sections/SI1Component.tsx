@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle, CheckCircle2, Calculator } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { FieldHelp } from "@/components/ui/field-help";
 
 interface ProjectData {
   projectName: string;
@@ -20,9 +21,11 @@ interface ProjectData {
 
 interface SI1ComponentProps {
   projectData: ProjectData;
+  siData: any;
+  onSiDataChange: (data: any) => void;
 }
 
-const SI1Component = ({ projectData }: SI1ComponentProps) => {
+const SI1Component = ({ projectData, siData, onSiDataChange }: SI1ComponentProps) => {
   const { toast } = useToast();
   const [formData, setFormData] = useState({
     usBuilding: "",
@@ -30,7 +33,12 @@ const SI1Component = ({ projectData }: SI1ComponentProps) => {
     height: "",
     compartmentArea: "",
     materialType: "",
+    ...siData
   });
+
+  useEffect(() => {
+    setFormData(prev => ({ ...prev, ...siData }));
+  }, [siData]);
   
   const [results, setResults] = useState({
     maxCompartmentArea: 0,
@@ -134,7 +142,9 @@ const SI1Component = ({ projectData }: SI1ComponentProps) => {
   };
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    const newData = { ...formData, [field]: value };
+    setFormData(newData);
+    onSiDataChange(newData);
   };
 
   return (
@@ -153,7 +163,10 @@ const SI1Component = ({ projectData }: SI1ComponentProps) => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="usBuilding">Ús de l'edifici</Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="usBuilding">Ús de l'edifici</Label>
+                <FieldHelp content="Selecciona l'ús principal de l'edifici segons la seva activitat predominant. Determina els requeriments de compartimentació." />
+              </div>
               <Select 
                 value={formData.usBuilding || projectData.usBuilding} 
                 onValueChange={(value) => handleInputChange("usBuilding", value)}
@@ -175,7 +188,10 @@ const SI1Component = ({ projectData }: SI1ComponentProps) => {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="surfaceArea">Superfície total (m²)</Label>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="surfaceArea">Superfície total (m²)</Label>
+                  <FieldHelp content="Superfície construïda total de l'edifici. Utilitzada per determinar els requeriments de compartimentació." />
+                </div>
                 <Input
                   id="surfaceArea"
                   type="number"
@@ -185,7 +201,10 @@ const SI1Component = ({ projectData }: SI1ComponentProps) => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="height">Alçada evacuació (m)</Label>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="height">Alçada evacuació (m)</Label>
+                  <FieldHelp content="Alçada d'evacuació de l'edifici. Determina els requeriments de resistència al foc dels elements compartimentadors." />
+                </div>
                 <Input
                   id="height"
                   type="number"
@@ -197,7 +216,10 @@ const SI1Component = ({ projectData }: SI1ComponentProps) => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="compartmentArea">Àrea del sector d'incendi (m²)</Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="compartmentArea">Àrea del sector d'incendi (m²)</Label>
+                <FieldHelp content="Superfície del sector d'incendi més gran. Ha de complir amb els límits màxims segons l'ús i l'alçada de l'edifici." />
+              </div>
               <Input
                 id="compartmentArea"
                 type="number"
@@ -208,7 +230,10 @@ const SI1Component = ({ projectData }: SI1ComponentProps) => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="materialType">Tipus de materials</Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="materialType">Tipus de materials</Label>
+                <FieldHelp content="Classificació de reacció al foc dels materials utilitzats a l'edifici. Afecta els requeriments de compartimentació." />
+              </div>
               <Select value={formData.materialType} onValueChange={(value) => handleInputChange("materialType", value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecciona el tipus" />

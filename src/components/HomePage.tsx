@@ -259,7 +259,34 @@ const HomePage = ({ onProjectDataChange, onGeneratePDF, projectData }: HomePageP
               </div>
             )}
 
-            <div className="pt-4 border-t">
+            <div className="pt-4 border-t space-y-3">
+              <div className="space-y-2">
+                <h4 className="font-semibold text-sm text-muted-foreground">Documentació de referència:</h4>
+                <div className="grid grid-cols-1 gap-2">
+                  <a 
+                    href="/CTE_DB_Si1.pdf" 
+                    download 
+                    className="text-xs bg-primary text-primary-foreground px-3 py-2 rounded hover:opacity-90 transition-smooth text-center"
+                  >
+                    📄 Descarregar CTE DB-SI1
+                  </a>
+                  <a 
+                    href="/CTE_DB_Si2.pdf" 
+                    download 
+                    className="text-xs bg-primary text-primary-foreground px-3 py-2 rounded hover:opacity-90 transition-smooth text-center"
+                  >
+                    📄 Descarregar CTE DB-SI2
+                  </a>
+                  <a 
+                    href="/CTE_DB_Si6.pdf" 
+                    download 
+                    className="text-xs bg-primary text-primary-foreground px-3 py-2 rounded hover:opacity-90 transition-smooth text-center"
+                  >
+                    📄 Descarregar CTE DB-SI6
+                  </a>
+                </div>
+              </div>
+              
               <Button 
                 onClick={onGeneratePDF}
                 variant="outline" 

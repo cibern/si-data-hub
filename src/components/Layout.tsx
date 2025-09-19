@@ -25,6 +25,16 @@ const Layout = () => {
     buildingLocation: "",
   });
 
+  // Estado global para datos de cada SI
+  const [siData, setSiData] = useState({
+    si1: {},
+    si2: {},
+    si3: {},
+    si4: {},
+    si5: {},
+    si6: {},
+  });
+
   const [siResults, setSiResults] = useState([
     { title: "SI 1 - Propagació interior", compliance: false, calculations: [], recommendations: [] },
     { title: "SI 2 - Propagació exterior", compliance: false, calculations: [], recommendations: [] },
@@ -172,8 +182,11 @@ const Layout = () => {
                     <CardContent className="p-6">
                       <Component 
                         projectData={projectData}
-                        onProjectDataChange={setProjectData}
-                        onGeneratePDF={handleGeneratePDF}
+                        siData={siData[section.id as keyof typeof siData] || {}}
+                        onSiDataChange={(data: any) => setSiData(prev => ({
+                          ...prev,
+                          [section.id]: data
+                        }))}
                       />
                     </CardContent>
                   </Card>
