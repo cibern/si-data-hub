@@ -8,7 +8,21 @@ import { Badge } from "@/components/ui/badge";
 import { AlertCircle, CheckCircle2, Calculator, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-const SI3Component = () => {
+interface ProjectData {
+  projectName: string;
+  usBuilding: string;
+  totalSurface: string;
+  evacuationHeight: string;
+  floors: string;
+  maxOccupancy: string;
+  buildingLocation: string;
+}
+
+interface SI3ComponentProps {
+  projectData: ProjectData;
+}
+
+const SI3Component = ({ projectData }: SI3ComponentProps) => {
   const { toast } = useToast();
   const [formData, setFormData] = useState({
     usBuilding: "",

@@ -8,7 +8,21 @@ import { Badge } from "@/components/ui/badge";
 import { AlertCircle, CheckCircle2, Calculator } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-const SI1Component = () => {
+interface ProjectData {
+  projectName: string;
+  usBuilding: string;
+  totalSurface: string;
+  evacuationHeight: string;
+  floors: string;
+  maxOccupancy: string;
+  buildingLocation: string;
+}
+
+interface SI1ComponentProps {
+  projectData: ProjectData;
+}
+
+const SI1Component = ({ projectData }: SI1ComponentProps) => {
   const { toast } = useToast();
   const [formData, setFormData] = useState({
     usBuilding: "",
@@ -48,7 +62,11 @@ const SI1Component = () => {
     const heightNum = parseFloat(formData.height);
     const compartmentNum = parseFloat(formData.compartmentArea);
 
-    if (!surfaceNum || !heightNum || !compartmentNum || !formData.usBuilding) {
+    // Usar dades del projecte general si están disponibles
+    const usBuilding = formData.usBuilding || projectData.usBuilding;
+    const height = heightNum || parseFloat(projectData.evacuationHeight);
+
+    if (!surfaceNum || !height || !compartmentNum || !usBuilding) {
       toast({
         title: "Error",
         description: "Si us plau, omple tots els camps necessaris",
@@ -63,18 +81,18 @@ const SI1Component = () => {
     const recommendations: string[] = [];
 
     // Ajustaments segons ús
-    switch (formData.usBuilding) {
+    switch (usBuilding) {
       case "residential":
-        maxArea = heightNum > 15 ? 1000 : 2500;
-        resistance = heightNum > 15 ? "EI 90" : "EI 60";
+        maxArea = height > 15 ? 1000 : 2500;
+        resistance = height > 15 ? "EI 90" : "EI 60";
         break;
       case "office":
         maxArea = 2500;
         resistance = "EI 60";
         break;
       case "commercial":
-        maxArea = heightNum > 10 ? 1500 : 2500;
-        resistance = heightNum > 10 ? "EI 90" : "EI 60";
+        maxArea = height > 10 ? 1500 : 2500;
+        resistance = height > 10 ? "EI 90" : "EI 60";
         break;
       case "industrial":
         maxArea = 1000;
@@ -94,7 +112,7 @@ const SI1Component = () => {
       recommendations.push("Millorar la compartimentació");
     }
 
-    if (heightNum > 28) {
+    if (height > 28) {
       recommendations.push("Complir requisits addicionals per edificis d'alçada");
       resistance = "EI 120";
     }
@@ -136,9 +154,14 @@ const SI1Component = () => {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="usBuilding">Ús de l'edifici</Label>
-              <Select value={formData.usBuilding} onValueChange={(value) => handleInputChange("usBuilding", value)}>
+              <Select 
+                value={formData.usBuilding || projectData.usBuilding} 
+                onValueChange={(value) => handleInputChange("usBuilding", value)}
+              >
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecciona l'ús" />
+                  <SelectValue placeholder={projectData.usBuilding ? 
+                    usosBuilding.find(u => u.value === projectData.usBuilding)?.label : 
+                    "Selecciona l'ús"} />
                 </SelectTrigger>
                 <SelectContent>
                   {usosBuilding.map(us => (
@@ -166,9 +189,9 @@ const SI1Component = () => {
                 <Input
                   id="height"
                   type="number"
-                  value={formData.height}
+                  value={formData.height || projectData.evacuationHeight}
                   onChange={(e) => handleInputChange("height", e.target.value)}
-                  placeholder="0"
+                  placeholder={projectData.evacuationHeight || "0"}
                 />
               </div>
             </div>

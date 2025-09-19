@@ -2,18 +2,52 @@ import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Flame, Building, Users, Shield, Truck, Settings } from "lucide-react";
+import { Flame, Building, Users, Shield, Truck, Settings, Home } from "lucide-react";
+import HomePage from "./HomePage";
 import SI1Component from "./sections/SI1Component";
 import SI2Component from "./sections/SI2Component";
 import SI3Component from "./sections/SI3Component";
 import SI4Component from "./sections/SI4Component";
 import SI5Component from "./sections/SI5Component";
 import SI6Component from "./sections/SI6Component";
+import { generatePDFReport } from "@/utils/pdfGenerator";
 
 const Layout = () => {
-  const [activeTab, setActiveTab] = useState("si1");
+  const [activeTab, setActiveTab] = useState("home");
+  
+  const [projectData, setProjectData] = useState({
+    projectName: "",
+    usBuilding: "",
+    totalSurface: "",
+    evacuationHeight: "",
+    floors: "",
+    maxOccupancy: "",
+    buildingLocation: "",
+  });
+
+  const [siResults, setSiResults] = useState([
+    { title: "SI 1 - Propagació interior", compliance: false, calculations: [], recommendations: [] },
+    { title: "SI 2 - Propagació exterior", compliance: false, calculations: [], recommendations: [] },
+    { title: "SI 3 - Evacuació d'ocupants", compliance: false, calculations: [], recommendations: [] },
+    { title: "SI 4 - Instal·lacions de protecció", compliance: false, calculations: [], recommendations: [] },
+    { title: "SI 5 - Intervenció dels bombers", compliance: false, calculations: [], recommendations: [] },
+    { title: "SI 6 - Resistència al foc", compliance: false, calculations: [], recommendations: [] },
+  ]);
+
+  const handleGeneratePDF = () => {
+    generatePDFReport(projectData, siResults);
+  };
 
   const sections = [
+    {
+      id: "home",
+      title: "Inici",
+      subtitle: "Dades generals",
+      description: "Dades bàsiques del projecte",
+      icon: Home,
+      color: "text-primary",
+      component: HomePage,
+    },
     {
       id: "si1",
       title: "SI 1",
@@ -92,7 +126,7 @@ const Layout = () => {
       <main className="max-w-7xl mx-auto px-4 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <div className="overflow-x-auto">
-            <TabsList className="grid w-full grid-cols-6 bg-card shadow-soft p-2 h-auto">
+            <TabsList className="grid w-full grid-cols-7 bg-card shadow-soft p-2 h-auto">
               {sections.map((section) => {
                 const IconComponent = section.icon;
                 return (
@@ -116,22 +150,34 @@ const Layout = () => {
             const Component = section.component;
             return (
               <TabsContent key={section.id} value={section.id} className="space-y-6">
-                <Card className="shadow-medium">
-                  <CardHeader className="bg-gradient-primary text-primary-foreground rounded-t-lg">
-                    <div className="flex items-center gap-3">
-                      <section.icon className="h-6 w-6" />
-                      <div>
-                        <CardTitle className="text-xl">{section.title} - {section.subtitle}</CardTitle>
-                        <CardDescription className="text-primary-foreground/80">
-                          {section.description}
-                        </CardDescription>
+                {section.id === "home" ? (
+                  <Component 
+                    projectData={projectData}
+                    onProjectDataChange={setProjectData}
+                    onGeneratePDF={handleGeneratePDF}
+                  />
+                ) : (
+                  <Card className="shadow-medium">
+                    <CardHeader className="bg-gradient-primary text-primary-foreground rounded-t-lg">
+                      <div className="flex items-center gap-3">
+                        <section.icon className="h-6 w-6" />
+                        <div>
+                          <CardTitle className="text-xl">{section.title} - {section.subtitle}</CardTitle>
+                          <CardDescription className="text-primary-foreground/80">
+                            {section.description}
+                          </CardDescription>
+                        </div>
                       </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="p-6">
-                    <Component />
-                  </CardContent>
-                </Card>
+                    </CardHeader>
+                    <CardContent className="p-6">
+                      <Component 
+                        projectData={projectData}
+                        onProjectDataChange={setProjectData}
+                        onGeneratePDF={handleGeneratePDF}
+                      />
+                    </CardContent>
+                  </Card>
+                )}
               </TabsContent>
             );
           })}
