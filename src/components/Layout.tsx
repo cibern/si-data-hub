@@ -25,6 +25,40 @@ const Layout = () => {
     buildingLocation: "",
   });
 
+  // Estado para datos específicos de cada SI
+  const [siData, setSiData] = useState({
+    si1: {
+      compartmentArea: "",
+      materialType: "",
+      installsAutomaticExtinction: false,
+    },
+    si2: {
+      facadeDistance: "",
+      roofCovering: "",
+      ventilationOpenings: "",
+    },
+    si3: {
+      exitWidth: "",
+      travelDistance: "",
+      evacuationTime: "",
+    },
+    si4: {
+      detectionSystem: "",
+      extinguishingSystem: "",
+      waterSupply: "",
+    },
+    si5: {
+      roadWidth: "",
+      accessHeight: "",
+      waterSupplyFireDept: "",
+    },
+    si6: {
+      structureType: "",
+      fireResistance: "",
+      loadLevel: "",
+    },
+  });
+
   const [siResults, setSiResults] = useState([
     { title: "SI 1 - Propagació interior", compliance: false, calculations: [], recommendations: [] },
     { title: "SI 2 - Propagació exterior", compliance: false, calculations: [], recommendations: [] },
@@ -36,6 +70,14 @@ const Layout = () => {
 
   const handleGeneratePDF = () => {
     generatePDFReport(projectData, siResults);
+  };
+
+  const updateSiResults = (siIndex: number, newResult: typeof siResults[0]) => {
+    setSiResults(prev => {
+      const updated = [...prev];
+      updated[siIndex] = newResult;
+      return updated;
+    });
   };
 
   const sections = [
@@ -172,8 +214,13 @@ const Layout = () => {
                     <CardContent className="p-6">
                       <Component 
                         projectData={projectData}
-                        onProjectDataChange={setProjectData}
-                        onGeneratePDF={handleGeneratePDF}
+                        siData={siData}
+                        onSiDataChange={setSiData}
+                        onSiResultChange={(result: any) => updateSiResults(section.id === "si1" ? 0 : 
+                          section.id === "si2" ? 1 : 
+                          section.id === "si3" ? 2 : 
+                          section.id === "si4" ? 3 : 
+                          section.id === "si5" ? 4 : 5, result)}
                       />
                     </CardContent>
                   </Card>

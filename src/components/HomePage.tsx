@@ -5,8 +5,9 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Home, Building2, Users, Calculator, FileText } from "lucide-react";
+import { Home, Building2, Users, Calculator, FileText, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { FieldHelp } from "@/components/ui/field-help";
 
 interface ProjectData {
   projectName: string;
@@ -110,7 +111,10 @@ const HomePage = ({ onProjectDataChange, onGeneratePDF, projectData }: HomePageP
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="projectName">Nom del projecte</Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="projectName">Nom del projecte</Label>
+                <FieldHelp content="Introdueix el nom identificatiu del projecte. Aquest nom apareixerà en tots els informes generats." />
+              </div>
               <Input
                 id="projectName"
                 value={projectData.projectName}
@@ -120,7 +124,10 @@ const HomePage = ({ onProjectDataChange, onGeneratePDF, projectData }: HomePageP
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="usBuilding">Ús principal de l'edifici</Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="usBuilding">Ús principal de l'edifici</Label>
+                <FieldHelp content="Selecciona l'ús predominant de l'edifici segons la classificació CTE. Això determinarà els requisits específics de cada SI." />
+              </div>
               <Select value={projectData.usBuilding} onValueChange={(value) => handleInputChange("usBuilding", value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecciona l'ús principal" />
@@ -137,7 +144,10 @@ const HomePage = ({ onProjectDataChange, onGeneratePDF, projectData }: HomePageP
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="totalSurface">Superfície total (m²)</Label>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="totalSurface">Superfície total (m²)</Label>
+                  <FieldHelp content="Superfície construïda total de l'edifici en metres quadrats. Inclou totes les plantes." />
+                </div>
                 <Input
                   id="totalSurface"
                   type="number"
@@ -147,7 +157,10 @@ const HomePage = ({ onProjectDataChange, onGeneratePDF, projectData }: HomePageP
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="evacuationHeight">Alçada d'evacuació (m)</Label>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="evacuationHeight">Alçada d'evacuació (m)</Label>
+                  <FieldHelp content="Alçada en metres entre la planta d'evacuació de l'edifici i la més alta dels recorreguts d'evacuació." />
+                </div>
                 <Input
                   id="evacuationHeight"
                   type="number"
@@ -160,7 +173,10 @@ const HomePage = ({ onProjectDataChange, onGeneratePDF, projectData }: HomePageP
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="floors">Número de plantes</Label>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="floors">Número de plantes</Label>
+                  <FieldHelp content="Número total de plantes de l'edifici, incloent planta baixa, soterranis i altells." />
+                </div>
                 <Input
                   id="floors"
                   type="number"
@@ -170,7 +186,10 @@ const HomePage = ({ onProjectDataChange, onGeneratePDF, projectData }: HomePageP
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="maxOccupancy">Ocupació màxima</Label>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="maxOccupancy">Ocupació màxima</Label>
+                  <FieldHelp content="Número màxim de persones que poden ocupar simultàniament l'edifici. Es calcula segons la taula 2.1 del CTE DB-SI." />
+                </div>
                 <Input
                   id="maxOccupancy"
                   type="number"
@@ -182,7 +201,10 @@ const HomePage = ({ onProjectDataChange, onGeneratePDF, projectData }: HomePageP
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="buildingLocation">Ubicació de l'edifici</Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="buildingLocation">Ubicació de l'edifici</Label>
+                <FieldHelp content="Tipus d'entorn on està ubicat l'edifici. Això afecta els requisits d'accessibilitat dels bombers i altres aspectes." />
+              </div>
               <Select value={projectData.buildingLocation} onValueChange={(value) => handleInputChange("buildingLocation", value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecciona la ubicació" />
@@ -259,7 +281,7 @@ const HomePage = ({ onProjectDataChange, onGeneratePDF, projectData }: HomePageP
               </div>
             )}
 
-            <div className="pt-4 border-t">
+            <div className="pt-4 border-t space-y-3">
               <Button 
                 onClick={onGeneratePDF}
                 variant="outline" 
@@ -269,6 +291,30 @@ const HomePage = ({ onProjectDataChange, onGeneratePDF, projectData }: HomePageP
                 <FileText className="h-4 w-4 mr-2" />
                 Generar informe PDF
               </Button>
+              
+              <div className="space-y-2">
+                <h4 className="font-semibold text-sm text-muted-foreground">Documentació de referència:</h4>
+                <div className="flex flex-col gap-2">
+                  <Button variant="outline" size="sm" asChild className="justify-start">
+                    <a href="/CTE_DB_Si1.pdf" download className="flex items-center gap-2">
+                      <Download className="h-4 w-4" />
+                      Descarregar SI1 - Propagació interior
+                    </a>
+                  </Button>
+                  <Button variant="outline" size="sm" asChild className="justify-start">
+                    <a href="/CTE_DB_Si2.pdf" download className="flex items-center gap-2">
+                      <Download className="h-4 w-4" />
+                      Descarregar SI2 - Propagació exterior
+                    </a>
+                  </Button>
+                  <Button variant="outline" size="sm" asChild className="justify-start">
+                    <a href="/CTE_DB_Si6.pdf" download className="flex items-center gap-2">
+                      <Download className="h-4 w-4" />
+                      Descarregar SI6 - Resistència al foc
+                    </a>
+                  </Button>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>

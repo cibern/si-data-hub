@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, CheckCircle2, Calculator } from "lucide-react";
+import { AlertCircle, CheckCircle2, Calculator, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { FieldHelp } from "@/components/ui/field-help";
 
 interface ProjectData {
   projectName: string;
@@ -18,19 +19,28 @@ interface ProjectData {
   buildingLocation: string;
 }
 
-interface SI1ComponentProps {
-  projectData: ProjectData;
+interface SiData {
+  si1: {
+    compartmentArea: string;
+    materialType: string;
+    installsAutomaticExtinction: boolean;
+  };
+  si2: any;
+  si3: any;
+  si4: any;
+  si5: any;
+  si6: any;
 }
 
-const SI1Component = ({ projectData }: SI1ComponentProps) => {
+interface SI1ComponentProps {
+  projectData: ProjectData;
+  siData: SiData;
+  onSiDataChange: (data: SiData) => void;
+  onSiResultChange: (result: any) => void;
+}
+
+const SI1Component = ({ projectData, siData, onSiDataChange, onSiResultChange }: SI1ComponentProps) => {
   const { toast } = useToast();
-  const [formData, setFormData] = useState({
-    usBuilding: "",
-    surfaceArea: "",
-    height: "",
-    compartmentArea: "",
-    materialType: "",
-  });
   
   const [results, setResults] = useState({
     maxCompartmentArea: 0,
@@ -58,18 +68,14 @@ const SI1Component = ({ projectData }: SI1ComponentProps) => {
   ];
 
   const calculateCompliance = () => {
-    const surfaceNum = parseFloat(formData.surfaceArea);
-    const heightNum = parseFloat(formData.height);
-    const compartmentNum = parseFloat(formData.compartmentArea);
+    const surfaceNum = parseFloat(projectData.totalSurface);
+    const heightNum = parseFloat(projectData.evacuationHeight);
+    const compartmentNum = parseFloat(siData.si1.compartmentArea);
 
-    // Usar dades del projecte general si están disponibles
-    const usBuilding = formData.usBuilding || projectData.usBuilding;
-    const height = heightNum || parseFloat(projectData.evacuationHeight);
-
-    if (!surfaceNum || !height || !compartmentNum || !usBuilding) {
+    if (!surfaceNum || !heightNum || !compartmentNum || !projectData.usBuilding) {
       toast({
         title: "Error",
-        description: "Si us plau, omple tots els camps necessaris",
+        description: "Si us plau, omple tots els camps necessaris (revisa les dades generals)",
         variant: "destructive",
       });
       return;
@@ -81,18 +87,18 @@ const SI1Component = ({ projectData }: SI1ComponentProps) => {
     const recommendations: string[] = [];
 
     // Ajustaments segons ús
-    switch (usBuilding) {
+    switch (projectData.usBuilding) {
       case "residential":
-        maxArea = height > 15 ? 1000 : 2500;
-        resistance = height > 15 ? "EI 90" : "EI 60";
+        maxArea = heightNum > 15 ? 1000 : 2500;
+        resistance = heightNum > 15 ? "EI 90" : "EI 60";
         break;
       case "office":
         maxArea = 2500;
         resistance = "EI 60";
         break;
       case "commercial":
-        maxArea = height > 10 ? 1500 : 2500;
-        resistance = height > 10 ? "EI 90" : "EI 60";
+        maxArea = heightNum > 10 ? 1500 : 2500;
+        resistance = heightNum > 10 ? "EI 90" : "EI 60";
         break;
       case "industrial":
         maxArea = 1000;
@@ -112,15 +118,29 @@ const SI1Component = ({ projectData }: SI1ComponentProps) => {
       recommendations.push("Millorar la compartimentació");
     }
 
-    if (height > 28) {
+    if (heightNum > 28) {
       recommendations.push("Complir requisits addicionals per edificis d'alçada");
       resistance = "EI 120";
     }
 
-    setResults({
+    const newResults = {
       maxCompartmentArea: maxArea,
       requiredResistance: resistance,
       compliance,
+      recommendations,
+    };
+
+    setResults(newResults);
+
+    // Actualitzar resultats globals
+    onSiResultChange({
+      title: "SI 1 - Propagació interior",
+      compliance,
+      calculations: [
+        { label: "Àrea màxima permesa", value: `${maxArea} m²` },
+        { label: "Resistència requerida", value: resistance },
+        { label: "Àrea del sector", value: `${compartmentNum} m²` },
+      ],
       recommendations,
     });
 
@@ -133,8 +153,11 @@ const SI1Component = ({ projectData }: SI1ComponentProps) => {
     });
   };
 
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const handleInputChange = (field: string, value: string | boolean) => {
+    onSiDataChange({
+      ...siData,
+      si1: { ...siData.si1, [field]: value }
+    });
   };
 
   return (
@@ -145,71 +168,43 @@ const SI1Component = ({ projectData }: SI1ComponentProps) => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Calculator className="h-5 w-5 text-primary" />
-              Dades del projecte
+              Dades específiques SI 1
             </CardTitle>
             <CardDescription>
-              Introdueix les característiques del edifici per verificar el compliment
+              Completa les dades específiques per verificar la propagació interior
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="usBuilding">Ús de l'edifici</Label>
-              <Select 
-                value={formData.usBuilding || projectData.usBuilding} 
-                onValueChange={(value) => handleInputChange("usBuilding", value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={projectData.usBuilding ? 
-                    usosBuilding.find(u => u.value === projectData.usBuilding)?.label : 
-                    "Selecciona l'ús"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {usosBuilding.map(us => (
-                    <SelectItem key={us.value} value={us.value}>
-                      {us.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="surfaceArea">Superfície total (m²)</Label>
-                <Input
-                  id="surfaceArea"
-                  type="number"
-                  value={formData.surfaceArea}
-                  onChange={(e) => handleInputChange("surfaceArea", e.target.value)}
-                  placeholder="0"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="height">Alçada evacuació (m)</Label>
-                <Input
-                  id="height"
-                  type="number"
-                  value={formData.height || projectData.evacuationHeight}
-                  onChange={(e) => handleInputChange("height", e.target.value)}
-                  placeholder={projectData.evacuationHeight || "0"}
-                />
+            <div className="p-4 bg-muted rounded-lg space-y-2">
+              <h4 className="font-semibold text-sm">Dades generals (des de l'inici):</h4>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>Ús: <Badge variant="secondary">{projectData.usBuilding}</Badge></div>
+                <div>Superfície: <Badge variant="outline">{projectData.totalSurface} m²</Badge></div>
+                <div>Alçada: <Badge variant="outline">{projectData.evacuationHeight} m</Badge></div>
+                <div>Plantes: <Badge variant="outline">{projectData.floors}</Badge></div>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="compartmentArea">Àrea del sector d'incendi (m²)</Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="compartmentArea">Àrea del sector d'incendi (m²)</Label>
+                <FieldHelp content="Àrea màxima del sector d'incendi segons les característiques constructives i l'ús de l'edifici." />
+              </div>
               <Input
                 id="compartmentArea"
                 type="number"
-                value={formData.compartmentArea}
+                value={siData.si1.compartmentArea}
                 onChange={(e) => handleInputChange("compartmentArea", e.target.value)}
                 placeholder="0"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="materialType">Tipus de materials</Label>
-              <Select value={formData.materialType} onValueChange={(value) => handleInputChange("materialType", value)}>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="materialType">Tipus de materials</Label>
+                <FieldHelp content="Classificació dels materials segons la seva reacció al foc (A1, A2, B, C, D). A1 és incombustible." />
+              </div>
+              <Select value={siData.si1.materialType} onValueChange={(value) => handleInputChange("materialType", value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecciona el tipus" />
                 </SelectTrigger>
@@ -223,12 +218,21 @@ const SI1Component = ({ projectData }: SI1ComponentProps) => {
               </Select>
             </div>
 
-            <Button 
-              onClick={calculateCompliance} 
-              className="w-full bg-gradient-primary hover:opacity-90 transition-smooth"
-            >
-              Calcular compliment SI 1
-            </Button>
+            <div className="flex gap-4">
+              <Button 
+                onClick={calculateCompliance} 
+                className="flex-1 bg-gradient-primary hover:opacity-90 transition-smooth"
+              >
+                Calcular compliment SI 1
+              </Button>
+              
+              <Button variant="outline" asChild>
+                <a href="/CTE_DB_Si1.pdf" download className="flex items-center gap-2">
+                  <Download className="h-4 w-4" />
+                  PDF SI1
+                </a>
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
