@@ -18,21 +18,28 @@ interface ProjectData {
   buildingLocation: string;
 }
 
-interface SI3ComponentProps {
-  projectData: ProjectData;
+interface SiData {
+  si1: any;
+  si2: any;
+  si3: {
+    exitWidth: string;
+    travelDistance: string;
+    evacuationTime: string;
+  };
+  si4: any;
+  si5: any;
+  si6: any;
 }
 
-const SI3Component = ({ projectData }: SI3ComponentProps) => {
+interface SI3ComponentProps {
+  projectData: ProjectData;
+  siData: SiData;
+  onSiDataChange: (data: SiData) => void;
+  onSiResultChange: (result: any) => void;
+}
+
+const SI3Component = ({ projectData, siData, onSiDataChange, onSiResultChange }: SI3ComponentProps) => {
   const { toast } = useToast();
-  const [formData, setFormData] = useState({
-    usBuilding: "",
-    totalArea: "",
-    floorArea: "",
-    occupantLoad: "",
-    exitWidth: "",
-    travelDistance: "",
-    numberOfFloors: "",
-  });
   
   const [results, setResults] = useState({
     calculatedOccupancy: 0,
