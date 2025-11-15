@@ -18,19 +18,28 @@ interface ProjectData {
   buildingLocation: string;
 }
 
-interface SI2ComponentProps {
-  projectData: ProjectData;
+interface SiData {
+  si1: any;
+  si2: {
+    facadeDistance: string;
+    roofCovering: string;
+    ventilationOpenings: string;
+  };
+  si3: any;
+  si4: any;
+  si5: any;
+  si6: any;
 }
 
-const SI2Component = ({ projectData }: SI2ComponentProps) => {
+interface SI2ComponentProps {
+  projectData: ProjectData;
+  siData: SiData;
+  onSiDataChange: (data: SiData) => void;
+  onSiResultChange: (result: any) => void;
+}
+
+const SI2Component = ({ projectData, siData, onSiDataChange, onSiResultChange }: SI2ComponentProps) => {
   const { toast } = useToast();
-  const [formData, setFormData] = useState({
-    facadeHeight: "",
-    distanceToProperty: "",
-    openingPercentage: "",
-    facadeMaterial: "",
-    adjacentBuilding: "",
-  });
   
   const [results, setResults] = useState({
     minDistance: 0,

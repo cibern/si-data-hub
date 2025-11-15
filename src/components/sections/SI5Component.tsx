@@ -18,23 +18,28 @@ interface ProjectData {
   buildingLocation: string;
 }
 
-interface SI5ComponentProps {
-  projectData: ProjectData;
+interface SiData {
+  si1: any;
+  si2: any;
+  si3: any;
+  si4: any;
+  si5: {
+    roadWidth: string;
+    accessHeight: string;
+    waterSupplyFireDept: string;
+  };
+  si6: any;
 }
 
-const SI5Component = ({ projectData }: SI5ComponentProps) => {
+interface SI5ComponentProps {
+  projectData: ProjectData;
+  siData: SiData;
+  onSiDataChange: (data: SiData) => void;
+  onSiResultChange: (result: any) => void;
+}
+
+const SI5Component = ({ projectData, siData, onSiDataChange, onSiResultChange }: SI5ComponentProps) => {
   const { toast } = useToast();
-  const [formData, setFormData] = useState({
-    buildingHeight: "",
-    buildingDepth: "",
-    accessWidth: "",
-    approachDistance: "",
-    accessSlope: "",
-    turningRadius: "",
-    loadCapacity: "",
-    hydrantDistance: "",
-    buildingUse: "",
-  });
   
   const [results, setResults] = useState({
     requiredAccess: "",

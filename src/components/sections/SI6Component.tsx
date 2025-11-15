@@ -18,20 +18,28 @@ interface ProjectData {
   buildingLocation: string;
 }
 
-interface SI6ComponentProps {
-  projectData: ProjectData;
+interface SiData {
+  si1: any;
+  si2: any;
+  si3: any;
+  si4: any;
+  si5: any;
+  si6: {
+    structureType: string;
+    fireResistance: string;
+    loadLevel: string;
+  };
 }
 
-const SI6Component = ({ projectData }: SI6ComponentProps) => {
+interface SI6ComponentProps {
+  projectData: ProjectData;
+  siData: SiData;
+  onSiDataChange: (data: SiData) => void;
+  onSiResultChange: (result: any) => void;
+}
+
+const SI6Component = ({ projectData, siData, onSiDataChange, onSiResultChange }: SI6ComponentProps) => {
   const { toast } = useToast();
-  const [formData, setFormData] = useState({
-    buildingHeight: "",
-    buildingUse: "",
-    structuralMaterial: "",
-    sectorLocation: "",
-    riskLevel: "",
-    numberOfFloors: "",
-  });
   
   const [results, setResults] = useState({
     requiredResistance: "",

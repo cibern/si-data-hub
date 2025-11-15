@@ -18,22 +18,28 @@ interface ProjectData {
   buildingLocation: string;
 }
 
-interface SI4ComponentProps {
-  projectData: ProjectData;
+interface SiData {
+  si1: any;
+  si2: any;
+  si3: any;
+  si4: {
+    detectionSystem: string;
+    extinguishingSystem: string;
+    waterSupply: string;
+  };
+  si5: any;
+  si6: any;
 }
 
-const SI4Component = ({ projectData }: SI4ComponentProps) => {
+interface SI4ComponentProps {
+  projectData: ProjectData;
+  siData: SiData;
+  onSiDataChange: (data: SiData) => void;
+  onSiResultChange: (result: any) => void;
+}
+
+const SI4Component = ({ projectData, siData, onSiDataChange, onSiResultChange }: SI4ComponentProps) => {
   const { toast } = useToast();
-  const [formData, setFormData] = useState({
-    buildingHeight: "",
-    buildingUse: "",
-    sectorArea: "",
-    riskLevel: "",
-    detectionSystem: "",
-    suppressionSystem: "",
-    sprinklerCoverage: "",
-    evacuationTime: "",
-  });
   
   const [results, setResults] = useState({
     requiredDetection: "",
